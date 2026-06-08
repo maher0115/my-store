@@ -1,43 +1,50 @@
 import { NextResponse } from "next/server";
 
-export async function POST(request: Request) {
+// ✅ سحب آمن للمفاتيح والتوكنز من ملف الـ Environment Variables المستقر بالسيرفر
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+
+export async function POST(req: Request) {
   try {
-    const body = await request.json();
-    const { telegramMessage } = body;
+    // استقبال نص الرسالة القادم من صفحة الـ Checkout
+    const { telegramMessage } = await req.json();
 
-    const TELEGRAM_TOKEN = "8832714254:AAFXXYLxnRaCfmNCct19gt7ibKHblQfqdsk"; 
-    const CHAT_ID = "6738473984"; 
+    // 🛡️ فحص أمني: التأكد من أن السيرفر يحتوي على الـ Tokens المطلوبة قبل إرسال الطلب
+    if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
+      console.error("❌ خطأ أمني: متغيرات التليجرام غير معرفة في ملف .env.local");
+      return NextResponse.json(
+        { error: "Configuration Error: Missing Environment Variables" },
+        { status: 500 }
+      );
+    }
 
-    // استخدام رابط تيليجرام الرسمي والمباشر (الأكثر استقراراً)
-    const url = `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`;
-
-    // تنظيف النص لضمان عدم رفض تيليجرام له
-    const cleanMessage = telegramMessage.replace(/<[^>]*>?/gm, '');
-
-    const telegramRes = await fetch(url, {
+    // بناء رابط الإرسال الرسمي لتليجرام باستخدام التوكن المشفر
+    const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+    
+    // إرسال الطلب إلى سيرفرات تليجرام
+    const response = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json" 
+      },
       body: JSON.stringify({
-        chat_id: CHAT_ID,
-        text: cleanMessage,
+        chat_id: TELEGRAM_CHAT_ID,
+        text: telegramMessage,
+        parse_mode: "Markdown", // لدعم النصوص العريضة والقوائم المرسلة من الكود
       }),
     });
 
-    // 🛡️ قراءة الرد كنص أولاً، لمنع كراش الـ JSON إذا كان هناك حجب أو صفحة خطأ
-    const responseText = await telegramRes.text();
-    console.log("الرد الخام من السيرفر:", responseText);
-
-    if (!telegramRes.ok) {
-      return NextResponse.json({ 
-        error: "فشل الإرسال. تأكد من تشغيل VPN إذا كنت على Localhost." 
-      }, { status: 400 });
+    // التحقق من نجاح العملية
+    if (response.ok) {
+      return NextResponse.json({ success: true, message: "Order notification sent to Telegram!" });
+    } else {
+      const errorData = await response.json();
+      console.error("Telegram API Refusal:", errorData);
+      return NextResponse.json({ error: "Telegram failed to deliver the message" }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true });
-  } catch (error: any) {
-    console.error("API_TELEGRAM_ERROR:", error);
-    return NextResponse.json({ 
-      error: "انقطع الاتصال بتيليجرام (قم بتشغيل VPN على الكمبيوتر)" 
-    }, { status: 500 });
+  } catch (error) {
+    console.error("Internal Server Error inside Telegram API Route:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
