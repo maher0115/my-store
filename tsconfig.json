@@ -29,6 +29,6 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "**/*.mts"
-, "app/product/[id]/.ProductDetailsClient.tsx"  ],
+, "app/product/[id]/ProductDetailsClient.tsx"  ],
   "exclude": ["node_modules"]
 }

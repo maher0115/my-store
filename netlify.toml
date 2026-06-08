@@ -1,0 +1,6 @@
+[build]
+  command = "next build"
+  publish = ".next"
+
+[build.environment]
+  NEXT_DISABLE_TURBO = "1"

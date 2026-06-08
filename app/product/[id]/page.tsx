@@ -1,7 +1,7 @@
 import React from "react";
 import { client } from "../../../sanity/lib/client";
 import Navbar from "../../../components/Navbar"; 
-import ProductDetailsClient from "./.ProductDetailsClient"; // 👈 هاد السطر المصلح بالملّيمتر
+import ProductDetailsClient from "./ProductDetailsClient";
 
 // 1. دالة سحب منتج واحد محدد بالـ ID من Sanity
 async function getSingleProduct(id: string) {
